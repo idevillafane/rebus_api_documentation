@@ -1,4 +1,7 @@
-# rebus_api_postman
+# rebus_api_documentation
+
+To run de postman file:
+
 Complete path to test the Redbus API in Postman.
 
 1) Download de .json file locally.
