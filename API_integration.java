@@ -26,12 +26,12 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 	 * 			1-. Al momento de llevarse a cabo la integración (en su primera versión, mayo 2022) del servicio Redbus TOL utilizaba
 	 * 		los siguentes endpoints (apuntando a los métodos declarados en la clase ServiciosRest):
 	 * 
-	 * 		I		GET 	/TOLWeb/api/rest/v1.0/authorize*
-	 * 		II		POST	/TOLWeb/api/rest/v1.0/trips
-	 * 		III		GET		/TOLWeb/api/rest/v1.0/seats/{{tripKey}}/{{tripKeyVuelta}}
-	 * 		IV		POST	/TOLWeb/api/rest/v1.0/multi/checkout
-	 * 		V		GET		/TOLWeb/api/rest/v1.0/payments/options*
-	 * 	 	VI		POST	/TOLWeb/api/rest/v1.0/payments/init*
+	 * 		I	GET 	/TOLWeb/api/rest/v1.0/authorize*
+	 * 		II	POST	/TOLWeb/api/rest/v1.0/trips
+	 * 		III	GET	/TOLWeb/api/rest/v1.0/seats/{{tripKey}}/{{tripKeyVuelta}}
+	 * 		IV	POST	/TOLWeb/api/rest/v1.0/multi/checkout
+	 * 		V	GET	/TOLWeb/api/rest/v1.0/payments/options*
+	 * 	 	VI	POST	/TOLWeb/api/rest/v1.0/payments/init*
 	 * 		VII 	POST	/TOLWeb/api/rest/v1.0/multi/book
 	 * 		VIII	POST	/TOLWeb/api/rest/v1.0/transaction/{{localizador}}/cancel
 	 * 		VIII'	POST	/TOLWeb/api/rest/v1.0/transaction/{{localizador}}/refund
@@ -77,12 +77,12 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 	 *		
 	 *			{!} :	Etapa del proceso de venta (endpoint de TOL)
 	 *			{^} :	Implementación de métodos (o declaración de variables) requeridos por TOL (para serialización u otros motivos) cuyo desarrollo
-	 *					no varía (o puede llevarse a cabo de igual manera) entre los distintos service manager.
-	 *			{#}	:	Código cuya lógica puede variar sustancialmente entre un ServiceManager y otro debido a que depende fuertemente de la lógica
-	 *					de negocio propia del servicio a integrar.
-	 *			{@}	:	Métodos, lógica, librerías o recursos que comenzaron a implementarse con Redbus y que antes se desarrollaban en TOL de otra manera.
-	 *			{n}	:	Donde n es el número de orden del paso dentro de la estructura general del metodo referenciado. Ver "ESTRUCTURA GENERAL DE LOS
-	 *					MÉTODOS IMPLEMENTADOS" más adelante.
+	 *				no varía (o puede llevarse a cabo de igual manera) entre los distintos service manager.
+	 *			{#} :	Código cuya lógica puede variar sustancialmente entre un ServiceManager y otro debido a que depende fuertemente de la lógica
+	 *				de negocio propia del servicio a integrar.
+	 *			{@} :	Métodos, lógica, librerías o recursos que comenzaron a implementarse con Redbus y que antes se desarrollaban en TOL de otra manera.
+	 *			{n} :	Donde n es el número de orden del paso dentro de la estructura general del metodo referenciado. Ver "ESTRUCTURA GENERAL DE LOS
+	 *				MÉTODOS IMPLEMENTADOS" más adelante.
 	 *
 	 *		ESTRUCTURA GENERAL DE LOS MÉTODOS
 	 *
@@ -94,10 +94,10 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 	 *		utiliza 5 endpoints para completar el proceso total de venta y cancelación de pasajes. Se puede agregar un sexto endpoint si se contempla
 	 *		también la cancelación de reservas de pasajes. A saber, tales endpoints son:
 	 *			
-	 *				a)	GET		/availabletrips 	(Trae información sobre todos los viajes disponibles)
-	 *				b)	GET		/tripdetails		(Trae información sobre las butacas de un viaje específico)
+	 *				a)	GET	/availabletrips 	(Trae información sobre todos los viajes disponibles)
+	 *				b)	GET	/tripdetails		(Trae información sobre las butacas de un viaje específico)
 	 *				c)	POST	/blockticket		(Reserva el boleto por un tiempo determinado)
-	 *				d)	GET		/bookandgetticket 	(Compra el pasaje y trae información sobre el mismo)
+	 *				d)	GET	/bookandgetticket 	(Compra el pasaje y trae información sobre el mismo)
 	 *				e)	POST	/cancelticket		(Cancela el pasaje comprado)
 	 *		
 	 *			Si bien cada servicio posee lógica distinta (otras API's de otros servicios pueden tener más o menos endpoints, y más o menos requerimientos
@@ -179,7 +179,9 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 	/* -------------------------------------------------- */
 	
 	/*
-	 * 
+	 *  {^}	Anotaciones y parametros requeridos por Serializable e Hibernate.
+	 *	Parámetros auxiliares globales para usar SimpleDateFormat, Gson y Logger
+	 *	Método getType que devuelve el tipo con el que se referencia esta empresa.
 	 */
 	
 	private static final long serialVersionUID = 1L;
@@ -231,21 +233,28 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 		/*{4.b}*/ String request = domain + "availabletrips?source=" + source + "&destination=" + destination + "&doj=" + doj;
 
 		try {
-
-			/*{4.c}*/ ClientResponse clientResponse = JerseyClient_byOAuth.getJerseyWebResourceByOAuth(request);
+			// {#} JerseyClient_byOauth es una clase estatica creada para realizar las peticiones HTTP mediante la libreria Jersey, autorizandola por OAuth
+		/*{4.c}*/ ClientResponse clientResponse = JerseyClient_byOAuth.getJerseyWebResourceByOAuth(request);
 
 			if (clientResponse.getStatus() == HttpStatus.SC_OK) {
 
-				String response = clientResponse.getEntity(String.class);
+				/*{5.a}*/ String response = clientResponse.getEntity(String.class);
 
-				AvailableTrips availableTrips = gson.fromJson(response, AvailableTrips.class);
+				/*{5.b}*/ AvailableTrips availableTrips = gson.fromJson(response, AvailableTrips.class);
 
-				loggerMessage = (availableTrips != null) ? "OK" : "NULL RESPONSE. HTTP STATUS: " + clientResponse.getStatus();
+				/*{1.c}*/ loggerMessage = (availableTrips != null) ? "OK" : "NULL RESPONSE. HTTP STATUS: " + clientResponse.getStatus();
 
-				PaxToPassengers pax = new PaxToPassengers(pasajeros);
+		/*{6.a}*/ // La lógica comienza acá =>
 				
+				// {@} PaxToPassangers convierte el "pax", que es un string con formato "int|int", donde se indica número de adultos y número de niños que viajan, en los int independientes correspondientes.
+				PaxToPassengers pax = new PaxToPassengers(pasajeros);
+				// {^} Se busca la empresa en la base de datos	
 				Empresa empresa = empresaDao.findByCodigo("REDBUS");
-
+				// Acá hay 4 (1+2+1) bucles for encadenados.
+				// El 1º reccorre cada viaje mostrado por Redbus
+				// Los 2 siguentes recorren, en cada viaje, cada punto de partida y cada punto de llegada, ya que Redbus puede tener más de un punto de embarque y/o desembarque por viaje.
+				// El 4º 'for i' es para recorrer cada una de las tarifas del viaje y asociarla a una calidad de butaca, ya que Redbus puede entregar más de una tarifa por viaje.
+				// En resumen, los primeros 3 'for i' son para desagregar los servicios con paradas multiples y 'convertirlos' en servicios con puntos de subida y bajada únicos. El 4º 'for i' es solamente para definir la calidad del asiento.
 				int servicioId = 0;
 				for (Trip trip : availableTrips.getAvailableTrips()) {
 
@@ -261,7 +270,7 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 						for (BoardingTime dt : trip.getDroppingTimes()) {
 
 							ServicioWrap servicioWrap = new ServicioWrap(origen, destino, empresa);
-
+							// Como estamos creando nuevos servicios, debemos crear nuevos ids unicos para cada servicio. Esto lo logramos armando una nueva cadena con el id del servicio y los de los puntos de subida y bajada que lo integraran. 
 							String servicioCodigo = RedbusUtils.buildServicioCodigo(trip, bt, dt);
 
 							int fareCount = 0;
@@ -274,7 +283,7 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 										trip.getAvailableSeats(), trip.getCurrencyType()));
 								fareCount++;
 							}
-
+							// El servicioId es de uso interno. El verdadero id está en servicioCodigo.
 							servicioWrap.setServicioId(servicioId);
 							servicioWrap.setTimestamp(fecha.getTime());
 							servicioWrap.setConTaquilla(!trip.getSeatLayoutDisabled());
@@ -285,18 +294,18 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 							servicioWrap.setHoraOrigen(sdfTol.format(departureTime)); // sw.setTzOrigen(departureTz);
 							servicioWrap.setHoraDestino(sdfTol.format(arrivalTime)); // sw.setTzDestino(arrivalTz);
 							servicioWrap.setAceptaDevolucion(trip.getPartialCancellationAllowed());
-							/*
-							 * Los siguientes parametros no son requeridos para el funcionamiento de TOL.
-							 * Simplemente se los completó para contar con mayor información.
-							 */
+							// Los siguientes parametros no son requeridos para el funcionamiento de TOL. Simplemente se los completó para contar con mayor información.
 							servicioWrap.setTourDescripcion(trip.getVehicleType());
 							servicioWrap.setInfoTour(trip.getBusType());
-
+							
 							servicios.add(servicioWrap);
 							servicioId++;
+							
+		/*{6.a}*/ // <= La lógica termina acá.					
 						}
 					}
 				}
+			// En general, Redbus solo devuelve codigos 200 y 500 (o 400 si hay problemas con OAUTH, pero eso ya esta manejado por otro lado), por lo que no hace falta explicitar más códigos en estos 'else if'.	
 			} else if (clientResponse.getStatus() == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
 				loggerMessage = "ERROR: " + clientResponse.getStatus();
 			} else {
@@ -311,9 +320,9 @@ public class RedBusWsServiceManager implements WsServiceManagerRedbus {
 			loggerMessage = e.toString();
 		}
 
-		wsLogger.saveRegistroLog(new LogWs(credencial, loggerEvent, loggerMessage, loggerParams));
+	/*{1.d}*/	wsLogger.saveRegistroLog(new LogWs(credencial, loggerEvent, loggerMessage, loggerParams));
 
-		return servicios;
+/*{6.b}*/	return servicios;
 	}
 
 	/* -------------------------------------------------- */
